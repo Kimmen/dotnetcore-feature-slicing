@@ -5,37 +5,58 @@ using Kimmen.FeatureSlicing.Api.Web.Features;
 using Kimmen.FeatureSlicing.Api.Web.Shared.Model;
 using Kimmen.FeatureSlicing.Api.Web.Shared.Validation;
 
-var builder = WebApplication.CreateBuilder(args);
+using Serilog;
 
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+Log.Debug("Initializing application");
 
-
-builder.Services.AddValidatorsFromAssemblyContaining<AddTeacherValidator>();
-builder.Services.AddMediatR(o =>
+try
 {
-    //Use any public type in Application to register all handlers
-    o.RegisterServicesFromAssemblyContaining(typeof(ValidationBehavior<,>));
+    var builder = WebApplication.CreateBuilder(args);
 
-    //Use the validation behavior, so I know the input is validated before hitting the handler.
-    o.AddOpenBehavior(typeof(ValidationBehavior<,>));
-});
+    builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
 
-//Note: Let the classroom instance exists while the application is alive. 
-builder.Services.AddSingleton<Classroom<NamedTeacher, NamedStudent>>();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+    builder.Services.AddValidatorsFromAssemblyContaining<AddTeacherValidator>();
+    builder.Services.AddMediatR(o =>
+    {
+        //Use any public type in Application to register all handlers
+        o.RegisterServicesFromAssemblyContaining(typeof(ValidationBehavior<,>));
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        //Use the validation behavior, so I know the input is validated before hitting the handler.
+        o.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    });
+
+    //Note: Let the classroom instance exists while the application is alive. 
+    builder.Services.AddSingleton<Classroom<NamedTeacher, NamedStudent>>();
+
+    var app = builder.Build();
+
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app
+        .UseHttpsRedirection()
+        .UseSerilogRequestLogging();
+ 
+    app.MapClassroomEndpoints();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-app.MapClassroomEndpoints();
-
-app.Run();
+catch(Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

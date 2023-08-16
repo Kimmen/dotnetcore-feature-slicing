@@ -18,6 +18,14 @@ public static class EndpointConfiguration
             .Produces(StatusCodes.Status202Accepted)
             .ProducesValidationProblem();
 
+        group.MapPut("student", async (AddStudent.Request addStudentWithName, ISender sender, CancellationToken cancellationToken) =>
+            await sender.Send(addStudentWithName, cancellationToken).AsResult(_ => Results.Accepted())
+        )
+            .WithName("AddStudent")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem();
+
         return app;
     }
 }
