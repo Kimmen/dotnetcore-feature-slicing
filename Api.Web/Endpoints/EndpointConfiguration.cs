@@ -18,13 +18,21 @@ public static class EndpointConfiguration
             .Produces(StatusCodes.Status202Accepted)
             .ProducesValidationProblem();
 
-        group.MapPut("student", async (AddStudent.Request addStudentWithName, ISender sender, CancellationToken cancellationToken) =>
+        group.MapPut("student", async (AddStudent.WithName addStudentWithName, ISender sender, CancellationToken cancellationToken) =>
             await sender.Send(addStudentWithName, cancellationToken).AsResult(_ => Results.Accepted())
         )
             .WithName("AddStudent")
             .WithOpenApi()
             .Produces(StatusCodes.Status202Accepted)
             .ProducesValidationProblem();
+
+        group.MapGet("roster", async (ISender sender, CancellationToken cancellationToken) =>
+            await sender.Send(new GetRoster.Request(), cancellationToken).AsResult()
+         )
+            .WithName("GetRoster")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         return app;
     }

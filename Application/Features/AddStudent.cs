@@ -1,24 +1,41 @@
 ﻿using ErrorOr;
 
+using FluentValidation;
+
+using Kimmen.FeatureSlicing.Api.Web.Shared.Model;
+
 using MediatR;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+namespace Kimmen.FeatureSlicing.Api.Web.Features;
 
-namespace Kimmen.FeatureSlicing.Api.Web.Features
+public static class AddStudent
 {
-    public static class AddStudent
+    public record WithName(string FirstName, string LastName) : IRequest<ErrorOr<Success>>;
+    internal class Handler : IRequestHandler<WithName, ErrorOr<Success>>
     {
-        public record Request(string FirstName, string LastName) : IRequest<ErrorOr<Success>>;
-        internal class Handler : IRequestHandler<Request, ErrorOr<Success>>
+        private readonly Classroom<NamedTeacher, NamedStudent> classroom;
+
+        public Handler(Classroom<NamedTeacher, NamedStudent> classroom) 
         {
-            public Task<ErrorOr<Success>> Handle(Request request, CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+            this.classroom = classroom;
         }
+
+        public async Task<ErrorOr<Success>> Handle(WithName request, CancellationToken cancellationToken)
+        {
+            this.classroom.AddStudent(new NamedStudent(request.FirstName, request.LastName));
+
+            return Result.Success;
+        }
+    }
+}
+
+public class AddStudentWithNameValidator : AbstractValidator<AddStudent.WithName>
+{
+    public AddStudentWithNameValidator()
+    {
+        RuleFor(x => x.FirstName)
+            .NotNull()
+            .MinimumLength(3)
+            .MaximumLength(255);
     }
 }

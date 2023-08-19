@@ -42,7 +42,7 @@ public class Classroom<T, S>
         if (Teacher is null)
             throw new Exception("Classroom contains no teacher.");
 
-        if (Students is null || Students.Count > 3)
+        if (Students is null || Students.Count < 3)
             throw new Exception("Classroom does not contain 3 students.");
 
         return (Teacher, Students);
